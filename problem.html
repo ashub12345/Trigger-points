@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Problem</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='problem.css') }}">
+  <style>
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      width: 100%;
+      padding: 10px 0;
+    }
+    
+    h1 {
+      margin: 0;
+      text-align: center;
+    }
+    
+    .logout-btn {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 8px 15px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>SELECT - PROBLEM</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    <div class="problem-buttons">
+      <button onclick="sendToPython('Eye nerve')">Eye nerve</button>
+      <button onclick="sendToPython('Ear nerve')">Ear nerve</button>
+      <button onclick="sendToPython('Ear Disease')">Ear Disease</button>
+      <button onclick="sendToPython('Navel')">Navel</button>
+      <button onclick="sendToPython('large intestine disease')">Large Intestine Disease</button>
+      <button onclick="sendToPython('Increased appetite point')">Increased Appetite Point</button>
+      <button onclick="sendToPython('Interstitial disease point')">Interstitial Disease Point</button>
+      <button onclick="sendToPython('Sinuses')">Sinuses</button>
+      <button onclick="sendToPython('Headache')">Headache</button>
+      <button onclick="sendToPython('Stress')">Stress</button>
+      <button onclick="sendToPython('Sleeping Point')">Sleeping Point</button>
+      <button onclick="sendToPython('Common Cold')">Common Cold</button>
+      <button onclick="sendToPython('Tension')">Tension</button>
+      <button onclick="sendToPython('Energy Point')">Energy Point</button>
+      <button onclick="sendToPython('IQ Level Point')">IQ Level Point</button>
+      <button onclick="sendToPython('Eye Problem')">Eye Problem</button>
+      <button onclick="sendToPython('Shoulder Pain')">Shoulder Pain</button>
+      <button onclick="sendToPython('Lungs Problem')">Lungs Problem</button>
+      <button onclick="sendToPython('Stomach Disease')">Stomach Disease</button>
+      <button onclick="sendToPython('Liver Disease')">Liver Disease</button>
+      <button onclick="sendToPython('Diabetes')">Diabetes</button>
+      <button onclick="sendToPython('Kidney Disease')">Kidney Disease</button>
+      <button onclick="sendToPython('Arthritis')">Arthritis</button>
+      <button onclick="sendToPython('Gall Bladder')">Gall Bladder</button>
+      <button onclick="sendToPython('Digestive System Disease')">Digestive System Disease</button>
+      <button onclick="sendToPython('Indigestion point')">Indigestion Point</button>
+      <button onclick="sendToPython('Urinary tract disease')">Urinary Tract Disease</button>
+      <button onclick="sendToPython('Appendix')">Appendix</button>
+      <button onclick="sendToPython('Hemorrhoid bavasir')">Hemorrhoid Bavasir</button>
+    </div>
+    <div id="response" style="margin-top: 20px; font-weight: bold;"></div>
+  </div>
+
+  <script>
+    let pointVisible = false;
+    
+    function sendToPython(condition) {
+      if(!pointVisible) {
+          pointVisible = true;
+      } 
+      //else {
+      //   alert("At one time only one point is shown!");
+      //   return;
+      // }
+      
+      const formData = new FormData();
+      formData.append("pbutton", condition);
+
+      fetch("http://127.0.0.1:5000/set_condition", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`Server Error: ${response.status} - ${text}`);
+          });
+        }
+        return response.json();
+      })
+      .then(result => {
+        document.getElementById("response").textContent = "Selected: " + condition;
+      })
+      .catch(err => {
+        console.error("Fetch error:", err.message);
+        document.getElementById("response").textContent = "Error: " + err.message;
+      });
+    }
+
+    function logout() {
+      alert("Logging out...");
+      window.location.href = "{{ url_for('log_in') }}";
+    }  
+  </script>
+</body>
+</html>

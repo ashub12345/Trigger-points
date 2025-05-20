@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+
+</head>
+<body>
+    <form class="container">
+    <!-- <div class="container"> -->
+        <!-- Logo Section -->
+        <img class="logo" src="{{ url_for('static', filename='logo-removebg-preview.png') }}" alt="Logo">
+        
+        <!-- Buttons -->
+        <a href="{{ url_for('sign_up') }}" id="signin">Sign-Up</a>
+        <a href="{{ url_for('log_in') }}" id="login">Login</a>
+
+    <!-- </div> -->
+    </form>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Acupressure</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+<body>
+    <a href="{{ url_for('index') }}" class="back-arrow">&#8592; Back</a>
+    <div class="nav">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('sign_up') }}">Sign-Up</a>
+    </div>
+    
+    <div class="container">
+        <img class="logo" src="{{ url_for('static', filename='logo-removebg-preview.png') }}" alt="Logo">
+        
+        <div class="login-box">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username">Email</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <p class="register-link">Don't have an account? <a href="{{ url_for('sign_up') }}">Sign-Up</a></p>
+                <a href="{{ url_for('forget') }}">Forgot Password</a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelector("#loginForm").addEventListener("submit", async function (event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            let username = document.getElementById("username").value;
+            let password = document.getElementById("password").value;
+            
+            if (!username || !password) {
+                alert("Please enter username and password.");
+                return;
+            }
+            
+            try {
+                // Updated to use the new API endpoint
+                let response = await fetch("/api/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                let data = await response.json();
+                
+                if (response.ok) {
+                    // Successfully logged in and received a token (stored in cookies)
+                    window.location.href = "{{ url_for('service') }}";
+                } else {
+                    // Handle errors
+                    if (data.error === "User not found") {
+                        alert("User does not exist! Please register first.");
+                        window.location.href = "{{ url_for('sign_up') }}";
+                    } else {
+                        alert(data.error || "Error logging in. Please try again.");
+                    }
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Failed to connect to the server.");
+            }
+        });
+    });
+    </script>
+</body>
+</html>

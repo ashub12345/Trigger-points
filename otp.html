@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='forget.css') }}">
+    <style>
+        .otp-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .otp-input {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 18px;
+            padding: 5px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        #message {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('forget') }}" class="back-arrow">&#8592; Back</a>
+    <div class="container">
+        <img class="logo" src="{{ url_for('static', filename='logo-removebg-preview.png') }}" alt="Logo">
+        <h2>Verify OTP</h2>
+        <p>Enter the 6-digit OTP sent to <strong>{{ email }}</strong></p>
+        
+        <form id="otpForm">
+            <div class="otp-container">
+                <input type="text" class="otp-input" maxlength="1" name="otp1" autofocus>
+                <input type="text" class="otp-input" maxlength="1" name="otp2">
+                <input type="text" class="otp-input" maxlength="1" name="otp3">
+                <input type="text" class="otp-input" maxlength="1" name="otp4">
+                <input type="text" class="otp-input" maxlength="1" name="otp5">
+                <input type="text" class="otp-input" maxlength="1" name="otp6">
+            </div>
+            <input type="hidden" id="email" value="{{ email }}">
+            <button type="submit" id="submitBtn">Verify OTP</button>
+            <p id="message"></p>
+        
+            <div id="passwordResetForm" class="hidden">
+                <h3>Reset Your Password</h3>
+                <input type="password" id="newPassword" name="newPassword" placeholder="New Password">
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password">
+                <input type="hidden" id="resetToken" value="">
+                <button type="button" id="resetPasswordBtn">Reset Password</button>
+            </div>
+        
+            <p>
+                <a href="#" id="resendOtp">Didn't receive OTP? Resend</a>
+            </p>
+        </form>
+    </div>
+    
+    <script>
+        // Set up OTP input functionality
+        const otpInputs = document.querySelectorAll('.otp-input');
+        
+        otpInputs.forEach((input, index) => {
+            // Move to next input after entering a digit
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1) {
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                }
+            });
+            
+            // Handle backspace
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && index > 0 && !e.target.value) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+        
+        // Handle form submission
+        document.getElementById('otpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.textContent = 'Verifying...';
+            submitBtn.disabled = true;
+            
+            await verifyOTP();
+            
+            // Reset button state
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
+        });
+
+    async function verifyOTP() {
+    const otp = Array.from(otpInputs).map(input => input.value).join('');
+    const email = document.getElementById('email').value;
+    const messageElement = document.getElementById('message');
+
+    if (!email || !otp) {
+        messageElement.innerText = 'Both OTP and email are required.';
+        messageElement.style.color = 'red';
+        return;
+    }
+
+    if (otp.length !== 6 || !/^\d+$/.test(otp)) {
+        messageElement.innerText = 'Please enter a valid 6-digit OTP';
+        messageElement.style.color = 'red';
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/verify-otp", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: email,
+                otp: otp
+            }),
+            signal: AbortSignal.timeout(10000)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            messageElement.innerText = errorData.message || 'Invalid OTP,Please try again';
+            messageElement.style.color = 'red';
+            return;
+        }
+
+        const data = await response.json();
+        messageElement.innerText = 'OTP verified successfully';
+        messageElement.style.color = 'green';
+
+        // Show password reset form
+        document.getElementById('passwordResetForm').classList.remove('hidden');
+        document.getElementById('resetToken').value = data.reset_token;
+
+        // Hide OTP inputs and verify button
+        document.querySelector('.otp-container').style.display = 'none';
+        document.getElementById('submitBtn').style.display = 'none';
+        document.getElementById('resendOtp').style.display = 'none';
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            messageElement.innerText = 'Request timed out. Please try again later.';
+        } else {
+            messageElement.innerText = 'Connection failed. Please try again later.';
+        }
+        messageElement.style.color = 'red';
+    }
+}
+        
+        // Handle resend OTP
+        document.getElementById('resendOtp').addEventListener('click', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const messageElement = document.getElementById('message');
+            
+            messageElement.innerText = 'Resending OTP...';
+            messageElement.style.color = 'blue';
+            
+            try {
+                const response = await fetch("/api/forgot-password", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ email: email }),
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                if (response.ok) {
+                    messageElement.innerText = 'New OTP sent to your email';
+                    messageElement.style.color = 'green';
+                } else {
+                    const data = await response.json();
+                    messageElement.innerText = data.message || 'Failed to resend OTP';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                messageElement.innerText = 'Connection failed. Please try again later.';
+                messageElement.style.color = 'red';
+            }
+        });
+        // Handle password reset button
+        document.getElementById('resetPasswordBtn').addEventListener('click', async function() {
+            const email = document.getElementById('email').value;
+            const resetToken = document.getElementById('resetToken').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const messageElement = document.getElementById('message');
+            
+            // Validate passwords
+            if (newPassword !== confirmPassword) {
+                messageElement.innerText = 'Passwords do not match';
+                messageElement.style.color = 'red';
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                messageElement.innerText = 'Password must be at least 6 characters';
+                messageElement.style.color = 'red';
+                return;
+            }
+            
+            try {
+                messageElement.innerText = 'Resetting password...';
+                messageElement.style.color = 'blue';
+                
+                const response = await fetch("/api/reset-password", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        reset_token: resetToken,
+                        new_password: newPassword
+                    }),
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageElement.innerText = 'Password reset successful!';
+                    messageElement.style.color = 'green';
+                    
+                    // Redirect to login page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('log_in') }}";
+                    }, 2000);
+                } else {
+                    messageElement.innerText = data.message || 'Failed to reset password';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                messageElement.innerText = 'Connection failed. Please try again later.';
+                messageElement.style.color = 'red';
+            }
+        });
+
+    </script>
+</body>
+</html>

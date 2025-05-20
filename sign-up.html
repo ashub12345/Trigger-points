@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Acupressure</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='signup.css') }}">
+    <style>
+        /* Adding inline styles for immediate testing */
+        .error-message {
+            color: #ff0000;
+            font-size: 0.85em;
+            margin-top: 5px;
+            font-weight: bold;
+            background-color: rgba(255, 200, 200, 0.8);
+            padding: 5px;
+            border-radius: 3px;
+            display: none;
+        }
+        
+        .input-group input.error {
+            border: 2px solid #ff0000;
+            background-color: rgba(255, 220, 220, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('log_in') }}" class="back-arrow">&#8592; Back</a>
+    <div class="nav">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('log_in') }}">Login</a>
+    </div>
+    
+    <div class="container">
+        <img class="logo" src="{{ url_for('static', filename='logo-removebg-preview.png') }}" alt="Logo">
+        <div class="signin-box">
+            <h2 style="color: white;">Sign up</h2>
+            <form id="signupForm" action="#" method="POST">
+                <div class="input-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                </div>
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           placeholder="Enter your Gmail address"
+                           oninput="validateEmail()"
+                           required>
+                    <div id="emailError" class="error-message"></div>
+                </div>
+                <div class="input-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" oninput="this.value = this.value.replace(/[^0-9]/g, '')" pattern="[0-9]{10}" maxlength="10" required>
+                </div>
+                <div class="input-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="" disabled selected hidden>Select your gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>                
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn">Sign up</button>
+                <script>
+                    function validateEmail() {
+                        const email = document.getElementById('email').value;
+                        const errorElement = document.getElementById('emailError');
+                        const emailInput = document.getElementById('email');
+                        
+                        // Clear previous error
+                        errorElement.style.display = 'none';
+                        errorElement.textContent = '';
+                        emailInput.classList.remove('error');
+                        
+                        if (email.trim() === '') {
+                            return; // No validation needed for empty input
+                        }
+                        
+                        if (!email.includes('@')) {
+                            errorElement.textContent = 'Email must include @ symbol';
+                            errorElement.style.display = 'block';
+                            emailInput.classList.add('error');
+                            return false;
+                        }
+                        
+                        const [localPart, domain] = email.split('@');
+                        
+                        if (!domain) {
+                            errorElement.textContent = 'Please enter a domain after @';
+                            errorElement.style.display = 'block';
+                            emailInput.classList.add('error');
+                            return false;
+                        }
+                        
+                        if (!domain.endsWith('.com')) {
+                            errorElement.textContent = 'Email must end with .com';
+                            errorElement.style.display = 'block';
+                            emailInput.classList.add('error');
+                            return false;
+                        }
+                        
+                        if (domain !== 'gmail.com') {
+                            errorElement.textContent = 'Only gmail.com domain is allowed';
+                            errorElement.style.display = 'block';
+                            emailInput.classList.add('error');
+                            return false;
+                        }
+                        
+                        return true;
+                    }
+                
+                    document.addEventListener("DOMContentLoaded", function () {
+                        document.querySelector("#signupForm").addEventListener("submit", async function (event) {
+                            event.preventDefault();
+                    
+                            // Validate email before submission
+                            if (!validateEmail()) {
+                                return false;
+                            }
+                            
+                            let email = document.getElementById("email").value;
+                            let name = document.getElementById("name").value;
+                            let phone = document.getElementById("phone").value;
+                            let gender = document.getElementById("gender").value;
+                            let password = document.getElementById("password").value;
+                    
+                            if (!email || !password || !name || !phone || !gender) {
+                                alert("Please fill in all fields.");
+                                return;
+                            }
+                    
+                            try {
+                                // Check if the email already exists
+                                let response = await fetch("http://localhost:5984/users/" + encodeURIComponent(email), {
+                                    method: "GET",
+                                    headers: {
+                                        "Authorization": "Basic " + btoa("admin:admin123"),
+                                        "Accept": "application/json",
+                                    }
+                                });
+                    
+                                if (response.ok) {
+                                    alert("This email is already registered. If you want to log in press ok.");
+                                    if(response.ok){
+                                        window.location.href = "{{ url_for('log_in') }}";
+                                    }
+                                } else if (response.status === 404) {
+                                    let newUser = {
+                                        _id: email,
+                                        name: name,
+                                        type:"userdetail",
+                                        email: email,
+                                        phone: phone,
+                                        gender: gender,
+                                        password: password
+                                    };
+                    
+                                    let saveResponse = await fetch("http://localhost:5984/users/", {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json",
+                                            "Accept": "application/json",
+                                            "Authorization": "Basic " + btoa("admin:admin123") // Replace with real CouchDB credentials
+                                        },
+                                        body: JSON.stringify(newUser)
+                                    });
+                    
+                                    if (saveResponse.ok) {
+                                        alert("User registered successfully");
+                                        window.location.href = "{{ url_for('log_in') }}";
+                                    } else {
+                                        alert("Error registering user. Please try again.");
+                                    }
+                                } else {
+                                    alert("Error checking email. Please try again.");
+                                }
+                    
+                            } catch (error) {
+                                console.error("Error:", error);
+                                alert("Failed to connect to the database.");
+                            }
+                        });
+                    });
+                </script>
+                <p class="register-link">Want to log in? <a href="{{ url_for('log_in') }}">Click here</a></p>
+            </form>
+        </div>
+    </div>    
+</body>
+</html>

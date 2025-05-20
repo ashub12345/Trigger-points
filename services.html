@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acupressure Services</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='service.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Our Acupressure Services</h1>
+        
+        <div class="services-grid">
+            <div class="service-card">
+                <h2>Full Body Acupressure</h2>
+                <p>Relieve tension and improve circulation.</p>
+                <a href="{{ url_for('problem') }}" class="card-link"></a>
+            </div>
+            
+            <div class="service-card">
+                <h2>Reflexology Therapy</h2>
+                <p>Target pressure points to enhance overall well-being.</p>
+                <a href="{{ url_for('problem') }}" class="card-link"></a>
+            </div>
+            
+            <div class="service-card">
+                <h2>Head & Neck Acupressure</h2>
+                <p>Ease headaches and neck pain effectively.</p>
+                <a href="{{ url_for('problem') }}" class="card-link"></a>
+            </div>
+            
+            <div class="service-card">
+                <h2>Hand & Foot Acupressure</h2>
+                <p>Stimulate key pressure points for relaxation.</p>
+                <a href="{{ url_for('problem') }}" class="card-link"></a>
+            </div>
+            
+            <div class="service-card">
+                <h2>HANDS ONLY</h2>
+                <p>Stimulate key pressure points for relaxation.</p>
+                <a href="{{ url_for('problem') }}" class="card-link"></a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

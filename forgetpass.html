@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='forget.css') }}">
+</head>
+<body>
+    <a href="{{ url_for('log_in') }}" class="back-arrow">&#8592; Back</a>
+    <div class="container">
+        <img class="logo" src="{{ url_for('static', filename='logo-removebg-preview.png') }}" alt="Logo">
+        <h2>Forgot Password</h2>
+        <p>Enter your email to reset your password</p>
+        <form id="forgotForm">
+            <input type="email" id="email" placeholder="Enter your email" required>
+            <button type="submit" id="submitBtn">Send OTP</button>
+            <p id="message"></p>
+        </form>
+    </div>
+    
+    <script>
+        document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.textContent = 'Sending...';
+            submitBtn.disabled = true;
+            
+            await sendResetOTP();
+            
+            // Reset button state
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
+        });
+        
+        async function sendResetOTP() {
+            const email = document.getElementById('email').value;
+            const messageElement = document.getElementById('message');
+            
+            if (!email) {
+                alert("Please enter email.");
+                return;
+            }
+            
+            try {
+                // Clear previous messages
+                messageElement.innerText = 'Checking email...';
+                messageElement.style.color = 'blue';
+                
+                // Set a timeout to catch unresponsive servers
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
+                try {
+                    const response = await fetch("/api/forgot-password", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ email: email }),
+                        signal: controller.signal
+                    });
+                    
+                    // Clear the timeout
+                    clearTimeout(timeoutId);
+                    
+                    // Handle non-JSON responses
+                    let data;
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        data = await response.json();
+                    } else {
+                        // If response is not JSON, handle it as text
+                        const textData = await response.text();
+                        data = { message: textData || "Unknown server response" };
+                    }
+                    
+                    if (response.ok) {
+                        messageElement.innerText = 'OTP sent to ' + email;
+                        messageElement.style.color = 'green';
+                        
+                        // Redirect to OTP verification page after 2 seconds
+                        setTimeout(() => {
+                            window.location.href = `/verify-otp?email=${encodeURIComponent(email)}`;
+                        }, 2000);
+                    } else {
+                        // Show server error message
+                        messageElement.innerText = data.message || 'Email not found. Please try again.';
+                        messageElement.style.color = 'red';
+                    }
+                } catch (fetchError) {
+                    // Clear the timeout if fetch failed
+                    clearTimeout(timeoutId);
+                    
+                    console.error("Fetch error:", fetchError);
+                    
+                    // Provide user-friendly error messages based on error type
+                    if (fetchError.name === "AbortError") {
+                        messageElement.innerText = 'Request timed out. The server might be busy or unavailable.';
+                    } else if (fetchError.message.includes("Failed to fetch")) {
+                        messageElement.innerText = 'Cannot connect to server. Please check your internet connection.';
+                    } else {
+                        messageElement.innerText = 'Connection failed. Please try again later.';
+                    }
+                    messageElement.style.color = 'red';
+                }
+                
+            } catch (error) {
+                console.error("Error:", error);
+                messageElement.innerText = 'An unexpected error occurred. Please try again later.';
+                messageElement.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>

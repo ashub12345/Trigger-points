@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='reset.css') }}">
+</head>
+<body>
+    <div class="container">
+        <img class="logo" src="{{ url_for('static', filename='logo-removebg-preview.png') }}" alt="Logo">
+        <h2>Reset Your Password</h2>
+        <p>Create a new password for your account</p>
+        
+        <form id="resetForm">
+            <div class="input-group">
+                <input type="password" id="newPassword" placeholder="New Password" required>
+                <button type="button" id="togglePassword1" class="toggle-password">👁️</button>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+                <button type="button" id="togglePassword2" class="toggle-password">👁️</button>
+            </div>
+            
+            <div class="password-strength">
+                <div class="strength-bar">
+                    <div id="strengthIndicator" class="strength-indicator"></div>
+                </div>
+                <p id="strengthText">Password strength</p>
+            </div>
+            
+            <div class="suggestion-box">
+                <h3>Password Suggestions:</h3>
+                <ul id="passwordSuggestions">
+                    <!-- System-generated password suggestions will appear here -->
+                </ul>
+            </div>
+            
+            <div class="password-requirements">
+                <p>Password must contain:</p>
+                <ul>
+                    <li id="length">At least 8 characters</li>
+                    <li id="uppercase">At least one uppercase letter</li>
+                    <li id="lowercase">At least one lowercase letter</li>
+                    <li id="number">At least one number</li>
+                    <li id="special">At least one special character (!@#$%^&*)</li>
+                </ul>
+            </div>
+            
+            <button type="submit" id="resetBtn">Reset Password</button>
+            <p id="message"></p>
+        </form>
+    </div>
+    
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        const token = urlParams.get('token');
+        
+        if (!email || !token) {
+            window.location.href = "{{ url_for('forgot_password') }}";
+        }
+        
+        // Toggle password visibility
+        document.getElementById('togglePassword1').addEventListener('click', function() {
+            togglePasswordVisibility('newPassword', this);
+        });
+        
+        document.getElementById('togglePassword2').addEventListener('click', function() {
+            togglePasswordVisibility('confirmPassword', this);
+        });
+        
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = '🔒';
+            } else {
+                input.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+        
+        // Password strength checker
+        const newPassword = document.getElementById('newPassword');
+        const strengthIndicator = document.getElementById('strengthIndicator');
+        const strengthText = document.getElementById('strengthText');
+        
+        // Generate random passwords
+        function generateRandomPasswords() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            const passwordSuggestions = document.getElementById('passwordSuggestions');
+            passwordSuggestions.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                let password = '';
+                // Ensure at least one uppercase, lowercase, number and special char
+                password += chars.substr(Math.floor(Math.random() * 26), 1); // Uppercase
+                password += chars.substr(26 + Math.floor(Math.random() * 26), 1); // Lowercase
+                password += chars.substr(52 + Math.floor(Math.random() * 10), 1); // Number
+                password += chars.substr(62 + Math.floor(Math.random() * 8), 1); // Special
+                
+                // Add more random chars to make password length 10-12
+                const remainingLength = 8 + Math.floor(Math.random() * 4);
+                for (let j = 0; j < remainingLength; j++) {
+                    password += chars[Math.floor(Math.random() * chars.length)];
+                }
+                
+                // Shuffle the password characters
+                password = password.split('').sort(() => 0.5 - Math.random()).join('');
+                
+                const li = document.createElement('li');
+                li.textContent = password;
+                li.addEventListener('click', function() {
+                    newPassword.value = password;
+                    document.getElementById('confirmPassword').value = password;
+                    checkPasswordStrength(password);
+                    checkPasswordMatch();
+                });
+                passwordSuggestions.appendChild(li);
+            }
+        }
+        
+        // Generate password suggestions on page load
+        generateRandomPasswords();
+        
+        function checkPasswordStrength(password) {
+            const requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[!@#$%^&*]/.test(password)
+            };
+            
+            // Update requirements list
+            for (const req in requirements) {
+                document.getElementById(req).classList.toggle('met', requirements[req]);
+            }
+            
+            // Calculate strength percentage
+            const metCount = Object.values(requirements).filter(Boolean).length;
+            const strengthPercentage = (metCount / 5) * 100;
+            
+            strengthIndicator.style.width = `${strengthPercentage}%`;
+            
+            if (strengthPercentage <= 20) {
+                strengthIndicator.style.backgroundColor = '#ff4d4d';
+                strengthText.textContent = 'Very Weak';
+            } else if (strengthPercentage <= 40) {
+                strengthIndicator.style.backgroundColor = '#ffa64d';
+                strengthText.textContent = 'Weak';
+            } else if (strengthPercentage <= 60) {
+                strengthIndicator.style.backgroundColor = '#ffff4d';
+                strengthText.textContent = 'Moderate';
+            } else if (strengthPercentage <= 80) {
+                strengthIndicator.style.backgroundColor = '#4dff4d';
+                strengthText.textContent = 'Strong';
+            } else {
+                strengthIndicator.style.backgroundColor = '#4d4dff';
+                strengthText.textContent = 'Very Strong';
+            }
+            
+            return metCount === 5; // All requirements met
+        }
+        
+        newPassword.addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+            checkPasswordMatch();
+        });
+        
+        // Check if passwords match
+        const confirmPassword = document.getElementById('confirmPassword');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        function checkPasswordMatch() {
+            const password1 = newPassword.value;
+            const password2 = confirmPassword.value;
+            
+            if (password2 && password1 !== password2) {
+                confirmPassword.setCustomValidity("Passwords don't match");
+                return false;
+            } else {
+                confirmPassword.setCustomValidity('');
+                return true;
+            }
+        }
+        
+        confirmPassword.addEventListener('input', checkPasswordMatch);
+        
+        // Submit form
+        document.getElementById('resetForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = newPassword.value;
+            const confirmPwd = confirmPassword.value;
+            const messageElement = document.getElementById('message');
+            
+            if (!checkPasswordStrength(password)) {
+                messageElement.innerText = 'Password does not meet all requirements';
+                messageElement.style.color = 'red';
+                return;
+            }
+            
+            if (!checkPasswordMatch()) {
+                messageElement.innerText = 'Passwords do not match';
+                messageElement.style.color = 'red';
+                return;
+            }
+            
+            try {
+                messageElement.innerText = 'Resetting password...';
+                messageElement.style.color = 'blue';
+                
+                // Check if new password matches old password
+                const checkResponse = await fetch("/api/check-password", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        token: token
+                    })
+                });
+                
+                const checkData = await checkResponse.json();
+                
+                if (!checkResponse.ok && checkData.sameAsPrevious) {
+                    messageElement.innerText = 'New password cannot be the same as your old password';
+                    messageElement.style.color = 'red';
+                    return;
+                }
+                
+                // Reset password
+                const response = await fetch("/api/reset-password", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        token: token
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageElement.innerText = 'Password reset successfully!';
+                    messageElement.style.color = 'green';
+                    
+                    // Redirect to login page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('log_in') }}";
+                    }, 2000);
+                } else {
+                    messageElement.innerText = data.message || 'Failed to reset password';
+                    messageElement.style.color = 'red';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                messageElement.innerText = 'Server connection error';
+                messageElement.style.color = 'red';
+            }
+        });
+    </script>
+</body>
+</html>
